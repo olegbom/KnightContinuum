@@ -2,13 +2,13 @@
 
 using System.Text;
 
-var board = new Board(5, 5, new Knight(1,1,1));
+var board = new Board(6, 5, new Knight(0,0,1));
 
 List<Board> oldGeneration = new List<Board>();
 List<Board> newGeneration = new List<Board>();
 oldGeneration.Add(board);
 
-for (int i = 0; i < 24; i++)
+for (int i = 0, max = board.Height*board.Width - 1; i < max; i++)
 {
     newGeneration.Clear();
     foreach (var b in oldGeneration)
@@ -18,6 +18,15 @@ for (int i = 0; i < 24; i++)
     oldGeneration.Clear();
     oldGeneration.AddRange(newGeneration);
 }
+newGeneration.Clear();
+foreach (var b in oldGeneration)
+{
+    b.ClearOne();
+    newGeneration.AddRange(b.GenerateChildrens());
+}
+
+
+
 
 for (var i = 0; i < newGeneration.Count; i++)
 {
@@ -26,7 +35,8 @@ for (var i = 0; i < newGeneration.Count; i++)
     Console.WriteLine($"{i}:");
     Console.WriteLine(b);
 }
-
+Console.WriteLine($"Number of solutions: {newGeneration.Count}");
+Console.WriteLine($"Number of generations: {Board.NumberOfGeneration}");
 Console.ReadKey();
 
 public readonly struct Knight
@@ -44,6 +54,7 @@ public readonly struct Knight
 
 public class Board
 {
+    public static long NumberOfGeneration { get; private set; } = 0;
 
     private byte[] _board;
 
@@ -55,6 +66,7 @@ public class Board
 
     public Board(int width, int height, Knight knight)
     {
+        NumberOfGeneration++;
         Width = width;
         Height = height;
         Knight = knight;
@@ -64,6 +76,7 @@ public class Board
 
     public Board(Board parent, Knight knight)
     {
+        NumberOfGeneration++;
         Width = parent.Width;
         Height = parent.Height;
         _board = new byte[parent.Width * parent.Height];
@@ -100,7 +113,14 @@ public class Board
         return result;
     }
 
-    
+    public void ClearOne()
+    {
+        for (int i = 0; i < _board.Length; i++)
+        {
+            if (_board[i] == 1) 
+                _board[i] = 0;
+        }
+    }
 
 
 
