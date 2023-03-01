@@ -1,10 +1,33 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 
-var board = new Board(4, 4, new Knight(0,0,1));
-Console.WriteLine(board);
+var board = new Board(5, 5, new Knight(1,1,1));
+
+List<Board> oldGeneration = new List<Board>();
+List<Board> newGeneration = new List<Board>();
+oldGeneration.Add(board);
+
+for (int i = 0; i < 24; i++)
+{
+    newGeneration.Clear();
+    foreach (var b in oldGeneration)
+    {
+        newGeneration.AddRange(b.GenerateChildrens());
+    }
+    oldGeneration.Clear();
+    oldGeneration.AddRange(newGeneration);
+}
+
+for (var i = 0; i < newGeneration.Count; i++)
+{
+    var b = newGeneration[i];
+    Console.WriteLine($"_________________");
+    Console.WriteLine($"{i}:");
+    Console.WriteLine(b);
+}
+
+Console.ReadKey();
 
 public readonly struct Knight
 {
@@ -48,6 +71,39 @@ public class Board
         Knight = knight;
         _board[knight.X + knight.Y * Width] = knight.Level;
     }
+
+    public List<Board> GenerateChildrens()
+    {
+        var result = new List<Board>();
+
+        void TryAddBoard(int dx, int dy)
+        {
+            int x = Knight.X + dx;
+            int y = Knight.Y + dy;
+
+            if (x >= 0 && y >= 0 && x < Width && y < Height && _board[x + y * Width] == 0)
+            {
+                Knight k = new Knight(x, y, (byte)(Knight.Level + 1));
+                result.Add(new Board(this, k));
+            }
+
+        }
+
+        TryAddBoard(1, 2);
+        TryAddBoard(2, 1);
+        TryAddBoard(-1, 2);
+        TryAddBoard(-2, 1);
+        TryAddBoard(1, -2);
+        TryAddBoard(2, -1);
+        TryAddBoard(-1, -2);
+        TryAddBoard(-2, -1);
+        return result;
+    }
+
+    
+
+
+
 
     public override string ToString()
     {
