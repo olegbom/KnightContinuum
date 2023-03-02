@@ -1,14 +1,19 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
-var board = new Board(6, 5, new Knight(0,0,1));
+Stopwatch sw = Stopwatch.StartNew();
+Board.Width = 6;
+Board.Height = 5;
+var board = new Board(0,0,1);
 
 List<Board> oldGeneration = new List<Board>();
 List<Board> newGeneration = new List<Board>();
 oldGeneration.Add(board);
 
-for (int i = 0, max = board.Height*board.Width - 1; i < max; i++)
+for (int i = 0, max = Board.Height* Board.Width - 1; i < max; i++)
 {
     newGeneration.Clear();
     foreach (var b in oldGeneration)
@@ -37,67 +42,65 @@ for (var i = 0; i < newGeneration.Count; i++)
 }
 Console.WriteLine($"Number of solutions: {newGeneration.Count}");
 Console.WriteLine($"Number of generations: {Board.NumberOfGeneration}");
+GC.Collect();
+sw.Stop();
+Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds/1000.0:F3} s");
 Console.ReadKey();
 
-public readonly struct Knight
-{
-    public readonly int X;
-    public readonly int Y;
-    public readonly byte Level;
-    public Knight(int x, int y, byte level)
-    {
-        X = x;
-        Y = y;
-        Level = level;
-    }
-}
 
 public class Board
 {
     public static long NumberOfGeneration { get; private set; } = 0;
+    public static int Width;
+    public static int Height;
 
-    private byte[] _board;
-
-
-    public readonly Knight Knight;
-
-    public int Width { get; init; }
-    public int Height { get; init; }
-
-    public Board(int width, int height, Knight knight)
+    private byte this[int i, int j]
     {
-        NumberOfGeneration++;
-        Width = width;
-        Height = height;
-        Knight = knight;
-        _board = new byte[width * height];
-        _board[knight.X + knight.Y * Width] = knight.Level;
+        get
+        {
+            if (_parent == null)
+                return 0;
+            if (i == _parent.X && j == _parent.Y)
+                return _parent.Level;
+            return _parent[i, j];
+        }
     }
 
-    public Board(Board parent, Knight knight)
+    private Board _parent = null;
+    public byte X;
+    public byte Y;
+    public byte Level;
+
+    public Board(byte x, byte y, byte level)
     {
         NumberOfGeneration++;
-        Width = parent.Width;
-        Height = parent.Height;
-        _board = new byte[parent.Width * parent.Height];
-        Array.Copy(parent._board, _board, _board.Length);
-        Knight = knight;
-        _board[knight.X + knight.Y * Width] = knight.Level;
+        X = x;
+        Y = y;
+        Level = level;
+    }
+
+    public Board(Board parent, byte x, byte y, byte level)
+    {
+        NumberOfGeneration++;
+        _parent = parent;
+        X = x;
+        Y = y;
+        Level = level;
+
     }
 
     public List<Board> GenerateChildrens()
     {
-        var result = new List<Board>();
+        var result = new List<Board>(8);
 
         void TryAddBoard(int dx, int dy)
         {
-            int x = Knight.X + dx;
-            int y = Knight.Y + dy;
+            int x = X + dx;
+            int y = Y + dy;
 
-            if (x >= 0 && y >= 0 && x < Width && y < Height && _board[x + y * Width] == 0)
+            if (x >= 0 && y >= 0 && x < Width && y < Height && this[x,y] == 0)
             {
-                Knight k = new Knight(x, y, (byte)(Knight.Level + 1));
-                result.Add(new Board(this, k));
+                result.Add(new Board(this, (byte)x, (byte)y, (byte)(Level + 1)));
             }
 
         }
@@ -115,11 +118,20 @@ public class Board
 
     public void ClearOne()
     {
-        for (int i = 0; i < _board.Length; i++)
+        if (_parent == null)
+        {
+            Level = 0;
+        }
+        else
+        {
+            _parent.ClearOne();
+        }
+        
+      /*  for (int i = 0; i < _board.Length; i++)
         {
             if (_board[i] == 1) 
                 _board[i] = 0;
-        }
+        }*/
     }
 
 
@@ -132,9 +144,9 @@ public class Board
         {
             for (int i = 0; i < Width - 1; i++)
             {
-                sb.Append($"{_board[i + j * Width],3} ");
+                sb.Append($"{this[i, j],3} ");
             }
-            sb.AppendLine($"{_board[Width - 1 + j * Width],3}");
+            sb.AppendLine($"{this[Width - 1, j],3}");
         }
 
         return sb.ToString();
