@@ -7,6 +7,9 @@ public class Board
     public static long NumberOfGeneration { get; private set; } = 0;
     public static int Width;
     public static int Height;
+    private static byte[,] _mapHelper;
+
+    public static void UpdateMap() => _mapHelper = new byte[Width, Height];
 
     private byte this[int i, int j]
     {
@@ -42,31 +45,52 @@ public class Board
         Level = level;
     }
 
-    public List<Board> GenerateChildrens()
+    public IEnumerable<Board> GenerateChildren()
     {
-        var result = new List<Board>(8);
+        _mapHelper[X, Y] = Level;
+        if (Level == Width * Height)
+        {
+            IEnumerable<Board> FindLoop(int dx, int dy)
+            {
+                int x = X + dx;
+                int y = Y + dy;
+                if (x >= 0 && y >= 0 && x < Width && y < Height && this[x, y] == 1)
+                    yield return new Board(this, (byte)x, (byte)y, 1);
+            }
+            foreach (var c in FindLoop(1, 2)) yield return c;
+            foreach (var c in FindLoop(2, 1)) yield return c;
+            foreach (var c in FindLoop(-1, 2)) yield return c;
+            foreach (var c in FindLoop(-2, 1)) yield return c;
+            foreach (var c in FindLoop(1, -2)) yield return c;
+            foreach (var c in FindLoop(2, -1)) yield return c;
+            foreach (var c in FindLoop(-1, -2)) yield return c;
+            foreach (var c in FindLoop(-2, -1)) yield return c;
+            yield break;
+        }
 
-        void TryAddBoard(int dx, int dy)
+
+        IEnumerable<Board> TryAddBoard(int dx, int dy)
         {
             int x = X + dx;
             int y = Y + dy;
 
             if (x >= 0 && y >= 0 && x < Width && y < Height && this[x,y] == 0)
             {
-                result.Add(new Board(this, (byte)x, (byte)y, (byte)(Level + 1)));
+                var b = new Board(this, (byte)x, (byte)y, (byte)(Level + 1));
+                foreach (var c in b.GenerateChildren())
+                    yield return c;
             }
-
         }
 
-        TryAddBoard(1, 2);
-        TryAddBoard(2, 1);
-        TryAddBoard(-1, 2);
-        TryAddBoard(-2, 1);
-        TryAddBoard(1, -2);
-        TryAddBoard(2, -1);
-        TryAddBoard(-1, -2);
-        TryAddBoard(-2, -1);
-        return result;
+        foreach (var c in TryAddBoard(1, 2)) yield return c; 
+        foreach (var c in TryAddBoard(2, 1)) yield return c; 
+        foreach (var c in TryAddBoard(-1, 2)) yield return c; 
+        foreach (var c in TryAddBoard(-2, 1)) yield return c; 
+        foreach (var c in TryAddBoard(1, -2)) yield return c; 
+        foreach (var c in TryAddBoard(2, -1)) yield return c; 
+        foreach (var c in TryAddBoard(-1, -2)) yield return c; 
+        foreach (var c in TryAddBoard(-2, -1)) yield return c;
+        _mapHelper[X, Y] = 0;
     }
 
     public void ClearOne()

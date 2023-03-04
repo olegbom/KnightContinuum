@@ -8,31 +8,33 @@ using Raylib_CsLo;
 Stopwatch sw = Stopwatch.StartNew();
 Board.Width = 6;
 Board.Height = 5;
+Board.UpdateMap();
 var board = new Board(0,0,1);
 
 List<Board> oldGeneration = new List<Board>();
-List<Board> newGeneration = new List<Board>();
-oldGeneration.Add(board);
+List<Board> newGeneration = board.GenerateChildren().ToList();// new List<Board>();
+//newGeneration.Add(board);
 
-for (int i = 0, max = Board.Height * Board.Width - 1; i < max; i++)
+/*for (int i = 0, max = Board.Height * Board.Width - 1; i < max; i++)
 {
     newGeneration.Clear();
     foreach (var b in oldGeneration)
     {
-        newGeneration.AddRange(b.GenerateChildrens());
+        newGeneration.AddRange(b.GenerateChildren());
     }
     oldGeneration.Clear();
     oldGeneration.AddRange(newGeneration);
-}
+}*/
+/*
 newGeneration.Clear();
 foreach (var b in oldGeneration)
 {
     b.ClearOne();
-    newGeneration.AddRange(b.GenerateChildrens());
-}
+    newGeneration.AddRange(b.GenerateChildren());
+}*/
 sw.Stop();
 
-Raylib.InitWindow(1280, 720, "Hello, Raylib-CsLo");
+Raylib.InitWindow(1280, 720, "Knight Continuum!");
 Raylib.SetTargetFPS(60);
 
 int index = 0;
@@ -67,7 +69,7 @@ while (!Raylib.WindowShouldClose()) // Detect window close button or ESC key
 
     }
 
-    if (newGeneration.Count > index)
+    if (newGeneration.Count > index && index >= 0)
     {
         newGeneration[index].Draw();
         newGeneration[index].DrawLabel();
@@ -78,6 +80,3 @@ while (!Raylib.WindowShouldClose()) // Detect window close button or ESC key
 
 Raylib.CloseWindow();
 
-
-Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds/1000.0:F3} s");
-Console.ReadKey();
