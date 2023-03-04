@@ -2,14 +2,13 @@
 using System.Text;
 using Raylib_CsLo;
 
+namespace KnightContinuum;
+
 public class Board
 {
     public static long NumberOfGeneration { get; private set; } = 0;
     public static int Width;
     public static int Height;
-    private static byte[,] _mapHelper;
-
-    public static void UpdateMap() => _mapHelper = new byte[Width, Height];
 
     private byte this[int i, int j]
     {
@@ -36,35 +35,37 @@ public class Board
         Level = level;
     }
 
-    public Board(Board parent, byte x, byte y, byte level)
+    public Board(Board parent, byte x, byte y, byte level) :this(x,y,level)
     {
-        NumberOfGeneration++;
         _parent = parent;
-        X = x;
-        Y = y;
-        Level = level;
     }
+
+    private readonly (int dx, int dy)[] _turns =
+    {
+        (1, 2),
+        (2, 1),
+        (-1, 2),
+        (-2, 1),
+        (1, -2),
+        (2, -1),
+        (-1, -2),
+        (-2, -1),
+    };
 
     public IEnumerable<Board> GenerateChildren()
     {
-        _mapHelper[X, Y] = Level;
         if (Level == Width * Height)
         {
-            IEnumerable<Board> FindLoop(int dx, int dy)
+            for (int i = 0; i < _turns.Length; i++)
             {
-                int x = X + dx;
-                int y = Y + dy;
+                int x = X + _turns[i].dx;
+                int y = Y + _turns[i].dy;
                 if (x >= 0 && y >= 0 && x < Width && y < Height && this[x, y] == 1)
+                {
                     yield return new Board(this, (byte)x, (byte)y, 1);
+                    break;
+                }
             }
-            foreach (var c in FindLoop(1, 2)) yield return c;
-            foreach (var c in FindLoop(2, 1)) yield return c;
-            foreach (var c in FindLoop(-1, 2)) yield return c;
-            foreach (var c in FindLoop(-2, 1)) yield return c;
-            foreach (var c in FindLoop(1, -2)) yield return c;
-            foreach (var c in FindLoop(2, -1)) yield return c;
-            foreach (var c in FindLoop(-1, -2)) yield return c;
-            foreach (var c in FindLoop(-2, -1)) yield return c;
             yield break;
         }
 
@@ -74,37 +75,39 @@ public class Board
             int x = X + dx;
             int y = Y + dy;
 
-            if (x >= 0 && y >= 0 && x < Width && y < Height && this[x,y] == 0)
+            if (x >= 0 && y >= 0 && x < Width && y < Height && this[x, y] == 0)
             {
                 var b = new Board(this, (byte)x, (byte)y, (byte)(Level + 1));
-                foreach (var c in b.GenerateChildren())
-                    yield return c;
+                return b.GenerateChildren();
             }
+            return Enumerable.Empty<Board>();
         }
 
-        foreach (var c in TryAddBoard(1, 2)) yield return c; 
-        foreach (var c in TryAddBoard(2, 1)) yield return c; 
-        foreach (var c in TryAddBoard(-1, 2)) yield return c; 
-        foreach (var c in TryAddBoard(-2, 1)) yield return c; 
-        foreach (var c in TryAddBoard(1, -2)) yield return c; 
-        foreach (var c in TryAddBoard(2, -1)) yield return c; 
-        foreach (var c in TryAddBoard(-1, -2)) yield return c; 
-        foreach (var c in TryAddBoard(-2, -1)) yield return c;
-        _mapHelper[X, Y] = 0;
-    }
-
-    public void ClearOne()
-    {
-        if (_parent == null)
+        if (Level > 3)
         {
-            Level = 0;
+            for(int i = 0; i < _turns.Length; i++)
+                foreach (var c in TryAddBoard(_turns[i].dx, _turns[i].dy))
+                    yield return c;
+           
         }
         else
         {
-            _parent.ClearOne();
+
+            List<Board>[] listsOfBoards = new List<Board>[_turns.Length];
+            Parallel.For(0, _turns.Length, (i) =>
+            {
+                listsOfBoards[i] = TryAddBoard(_turns[i].dx, _turns[i].dy).ToList();
+            });
+            foreach (var list in listsOfBoards)
+            {
+                foreach (var board in list)
+                {
+                    yield return board;
+                }
+            }
         }
     }
-    
+
     public void Draw()
     {
         if (_parent != null)

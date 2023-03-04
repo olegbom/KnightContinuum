@@ -3,38 +3,20 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using KnightContinuum;
 using Raylib_CsLo;
 
 Stopwatch sw = Stopwatch.StartNew();
-Board.Width = 6;
-Board.Height = 5;
-Board.UpdateMap();
+Board.Width = 10;
+Board.Height = 3;
+
 var board = new Board(0,0,1);
 
-List<Board> oldGeneration = new List<Board>();
-List<Board> newGeneration = board.GenerateChildren().ToList();// new List<Board>();
-//newGeneration.Add(board);
+List<Board> newGeneration = board.GenerateChildren().ToList();
 
-/*for (int i = 0, max = Board.Height * Board.Width - 1; i < max; i++)
-{
-    newGeneration.Clear();
-    foreach (var b in oldGeneration)
-    {
-        newGeneration.AddRange(b.GenerateChildren());
-    }
-    oldGeneration.Clear();
-    oldGeneration.AddRange(newGeneration);
-}*/
-/*
-newGeneration.Clear();
-foreach (var b in oldGeneration)
-{
-    b.ClearOne();
-    newGeneration.AddRange(b.GenerateChildren());
-}*/
 sw.Stop();
 
-Raylib.InitWindow(1280, 720, "Knight Continuum!");
+Raylib.InitWindow(1520, 720, "Knight Continuum!");
 Raylib.SetTargetFPS(60);
 
 int index = 0;
